@@ -1,39 +1,43 @@
 import { Suspense, lazy } from "react";
-import { Navigate, useRoutes } from "react-router-dom";
-
-// layouts
-import DashboardLayout from "../layouts/dashboard";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 // config
-import { DEFAULT_PATH } from "../config";
 import LoadingScreen from "../components/LoadingScreen";
 
-const Loadable = (Component) => (props) => {
-  return (
-    <Suspense fallback={<LoadingScreen />}>
-      <Component {...props} />
-    </Suspense>
-  );
-};
+const Loadable = (Component) => (props) => (
+  <Suspense fallback={<LoadingScreen />}>
+    <Component {...props} />
+  </Suspense>
+);
+
+// Lazy-loaded components
+const Home = Loadable(lazy(() => import("../components/Home/Home")));
+const Navbar = Loadable(lazy(() => import("../components/Home/Navbar")));
+const DashboardLayout = Loadable(lazy(() => import("../layouts/dashboard")));
+const GeneralApp = Loadable(lazy(() => import("../pages/dashboard/GeneralApp")));
+const Page404 = Loadable(lazy(() => import("../pages/Page404")));
 
 export default function Router() {
-  return useRoutes([
-    {
-      path: "/",
-      element: <DashboardLayout />,
-      children: [
-        { element: <Navigate to={DEFAULT_PATH} replace />, index: true },
-        { path: "app", element: <GeneralApp /> },
-        
-        { path: "404", element: <Page404 /> },
-        { path: "*", element: <Navigate to="/404" replace /> },
-      ],
-    },
-    { path: "*", element: <Navigate to="/404" replace /> },
-  ]);
-}
+  return (
+    <Routes>
+      {/* Home Page with Navbar */}
+      <Route
+        path="/"
+        element={
+          <>
+            <Navbar />
+            <Home />
+          </>
+        }
+      />
 
-const GeneralApp = Loadable(
-  lazy(() => import("../pages/dashboard/GeneralApp")),
-);
-const Page404 = Loadable(lazy(() => import("../pages/Page404")));
+      {/* Dashboard Layout with GeneralApp as its child */}
+      <Route path="/dashboard" element={<DashboardLayout />}>
+        <Route index element={<GeneralApp />} />
+      </Route>
+
+      {/* Redirect unknown routes to 404 */}
+      <Route path="*" element={<Page404 />} />
+    </Routes>
+  );
+}
